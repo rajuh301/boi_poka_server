@@ -1,175 +1,192 @@
-const express = require('express');
+const express = require("express");
 const app = express();
-const cors = require('cors');
-require('dotenv').config()
+const cors = require("cors");
+require("dotenv").config();
 const port = process.env.PORT || 5000;
-
-
 
 // meddleware
 app.use(cors());
 app.use(express.json());
 
-
-
-const { MongoClient, ServerApiVersion } = require('mongodb');
+const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
 const uri = `mongodb+srv://${process.env.USER_DB}:${process.env.PASS_DB}@cluster0.tfb4xbn.mongodb.net/?retryWrites=true&w=majority`;
 
 // Create a MongoClient with a MongoClientOptions object to set the Stable API version
 const client = new MongoClient(uri, {
-    serverApi: {
-        version: ServerApiVersion.v1,
-        strict: true,
-        deprecationErrors: true,
-    }
+  serverApi: {
+    version: ServerApiVersion.v1,
+    strict: true,
+    deprecationErrors: true,
+  },
 });
 
 async function run() {
-    try {
-        // Connect the client to the server	(optional starting in v4.7)
-        await client.connect();
+  try {
+    // Connect the client to the server	(optional starting in v4.7)
+    await client.connect();
 
+    // ----------- start data
+    const usersCollection = client.db("boiPoka").collection("users");
+    const writerCollection = client.db("boiPoka").collection("writers");
+    const authorCollection = client.db("boiPoka").collection("author");
+    const booksCollection = client.db("boiPoka").collection("books");
 
-        // ----------- start data
-        const usersCollection = client.db("boiPoka").collection("users");
-        const writerCollection = client.db("boiPoka").collection("writers");
-        const authorCollection = client.db("boiPoka").collection("author");
-        const booksCollection = client.db("boiPoka").collection("books");
+    // User releted api
+    app.get("/users", async (req, res) => {
+      const result = await usersCollection.find().toArray();
+      res.send(result);
+    });
 
+    app.post("/users", async (req, res) => {
+      const user = req.body;
+      console.log(user);
+      const query = { email: user.email };
+      const existingUser = await usersCollection.findOne(query);
+      console.log("ExistingUser", existingUser);
 
+      if (existingUser) {
+        return res.send({ message: "User alerady exists" });
+      }
+      const result = await usersCollection.insertOne(user);
+      res.send(result);
+    });
 
+    app.get("/users/admin/:email", async (req, res) => {
+      const email = req.params.email;
 
+      const query = { email: email };
+      const user = await usersCollection.findOne(query);
+      const result = { admin: user?.roal === "admin" };
+      res.send(result);
+    });
 
+    // Writer releted api
+    app.post("/writer", async (req, res) => {
+      const writer = req.body;
+      console.log(writer);
+      const query = { name: writer.name };
+      const existingWriter = await writerCollection.findOne(query);
+      console.log("ExistingWriter", existingWriter);
 
-        // User releted api 
-        app.get('/users', async (req, res) => {
-            const result = await usersCollection.find().toArray();
-            res.send(result);
-        })
+      if (existingWriter) {
+        return res.send({ message: "Writer alerady exists" });
+      }
+      const result = await writerCollection.insertOne(writer);
+      res.send(result);
+    });
 
-        app.post('/users', async (req, res) => {
-            const user = req.body;
-            console.log(user)
-            const query = { email: user.email }
-            const existingUser = await usersCollection.findOne(query);
-            console.log('ExistingUser', existingUser)
+    app.get("/writer", async (req, res) => {
+      const result = await writerCollection.find().toArray();
+      res.send(result);
+    });
 
-            if (existingUser) {
-                return res.send({ message: 'User alerady exists' })
-            }
-            const result = await usersCollection.insertOne(user);
-            res.send(result);
-        })
+    // find writer details
+    app.get("/writer/:id", async (req, res) => {
+      try {
+        const id = req.params.id;
+        console.log(id);
+        const query = { _id: new ObjectId(id) };
 
+        const result = await writerCollection.findOne(query);
+        res.send(result);
+      } catch (error) {
+        console.log(error);
+      }
+    });
 
+    app.get("/search/:text", async (req, res) => {
+      try {
+        const text = req.params.text;
 
-        app.get('/users/admin/:email', async (req, res) => {
-            const email = req.params.email;
+        const result = await booksCollection
+          .find({
+            $or: [
+              { bookName: { $regex: text, $options: "i" } },
+              { category_1: { $regex: text, $options: "i" } },
+              { category_2: { $regex: text, $options: "i" } },
+            ],
+          })
+          .toArray();
 
-            const query = { email: email }
-            const user = await usersCollection.findOne(query);
-            const result = { admin: user?.roal === 'admin' }
-            res.send(result);
-        })
+        res.send(result);
+      } catch (error) {
+        console.log(error);
+      }
+    });
 
+    // Author releted api
+    app.post("/author", async (req, res) => {
+      const author = req.body;
+      console.log(author);
+      const query = { name: author.name };
+      const existingAuthor = await authorCollection.findOne(query);
+      console.log("ExistingAuthor", existingAuthor);
 
-        // Writer releted api
-        app.post('/writer', async (req, res) => {
-            const writer = req.body;
-            console.log(writer)
-            const query = { name: writer.name }
-            const existingWriter = await writerCollection.findOne(query);
-            console.log('ExistingWriter', existingWriter)
+      if (existingAuthor) {
+        return res.send({ message: "Author alerady exists" });
+      }
+      const result = await authorCollection.insertOne(author);
+      res.send(result);
+    });
 
-            if (existingWriter) {
-                return res.send({ message: 'Writer alerady exists' })
-            }
-            const result = await writerCollection.insertOne(writer);
-            res.send(result);
-        })
+    app.get("/author", async (req, res) => {
+      const result = await authorCollection.find().toArray();
+      res.send(result);
+    });
 
-        app.get('/writer', async (req, res) => {
-            const result = await writerCollection.find().toArray();
-            res.send(result);
-        })
+    // book releted api
+    app.post("/bookpost", async (req, res) => {
+      const bookPost = req.body;
+      console.log(bookPost);
+      const query = { name: bookPost.bookName };
+      const existingBook = await booksCollection.findOne(query);
+      console.log("ExistingBook", existingBook);
 
+      if (existingBook) {
+        return res.send({ message: "Book alerady exists" });
+      }
+      const result = await booksCollection.insertOne(bookPost);
+      res.send(result);
+    });
 
+    app.get("/bookpost", async (req, res) => {
+      const result = await booksCollection.find().toArray();
+      res.send(result);
+    });
 
+    app.get("/bookpost/:authorname", async (req, res) => {
+      try {
+        const id = decodeURIComponent(req.params.authorname);
+        console.log("amar id", id);
 
+        const result = await booksCollection.find({ bookWriter: id }).toArray();
 
-        // Author releted api
-        app.post('/author', async (req, res) => {
-            const author = req.body;
-            console.log(author)
-            const query = { name: author.name }
-            const existingAuthor = await authorCollection.findOne(query);
-            console.log('ExistingAuthor', existingAuthor)
+        res.send(result);
+      } catch (error) {
+        console.log(error);
+      }
+    });
 
-            if (existingAuthor) {
-                return res.send({ message: 'Author alerady exists' })
-            }
-            const result = await authorCollection.insertOne(author);
-            res.send(result);
-        })
+    // ----------- end data
 
-
-        app.get('/author', async (req, res) => {
-            const result = await authorCollection.find().toArray();
-            res.send(result);
-        })
-
-
-
-        // book releted api
-        app.post('/bookpost', async (req, res) => {
-            const bookPost = req.body;
-            console.log(bookPost)
-            const query = { name: bookPost.bookName }
-            const existingBook = await booksCollection.findOne(query);
-            console.log('ExistingBook', existingBook)
-
-            if (existingBook) {
-                return res.send({ message: 'Book alerady exists' })
-            }
-            const result = await booksCollection.insertOne(bookPost);
-            res.send(result);
-        })
-
-
-        app.get('/bookpost', async (req, res) => {
-            const result = await booksCollection.find().toArray();
-            res.send(result);
-        })
-
-
-
-
-        // ----------- end data
-
-
-
-
-
-
-        // Send a ping to confirm a successful connection
-        await client.db("admin").command({ ping: 1 });
-        console.log("Pinged your deployment. You successfully connected to MongoDB!");
-    } finally {
-        // Ensures that the client will close when you finish/error
-        // await client.close();
-    }
+    // Send a ping to confirm a successful connection
+    await client.db("admin").command({ ping: 1 });
+    console.log(
+      "Pinged your deployment. You successfully connected to MongoDB!"
+    );
+  } finally {
+    // Ensures that the client will close when you finish/error
+    // await client.close();
+  }
 }
 run().catch(console.dir);
 
+// ------------------------------ end
 
-
-
-// ------------------------------ end 
-
-app.get('/', (req, res) => {
-    res.send('Boi-poka Server is running');
-})
+app.get("/", (req, res) => {
+  res.send("Boi-poka Server is running");
+});
 
 app.listen(port, () => {
-    console.log(`Boi-poka Server is running on port: ${port}`)
-})
+  console.log(`Boi-poka Server is running on port: ${port}`);
+});
