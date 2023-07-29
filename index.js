@@ -80,6 +80,20 @@ async function run() {
       res.send(result);
     });
 
+    // find book details
+    app.get("/bookDetails/:id", async (req, res) => {
+      try {
+        const id = req.params.id;
+        console.log(id);
+        const query = { _id: new ObjectId(id) };
+
+        const result = await booksCollection.findOne(query);
+        res.send(result);
+      } catch (error) {
+        console.log(error);
+      }
+    });
+
     // find writer details
     app.get("/writer/:id", async (req, res) => {
       try {
@@ -104,6 +118,9 @@ async function run() {
               { bookName: { $regex: text, $options: "i" } },
               { category_1: { $regex: text, $options: "i" } },
               { category_2: { $regex: text, $options: "i" } },
+              { category_3: { $regex: text, $options: "i" } },
+              { category_4: { $regex: text, $options: "i" } },
+              { bookWriter: { $regex: text, $options: "i" } },
             ],
           })
           .toArray();
@@ -154,12 +171,53 @@ async function run() {
       res.send(result);
     });
 
-    app.get("/bookpost/:authorname", async (req, res) => {
+    app.get("/bookpost/:id", async (req, res) => {
       try {
-        const id = decodeURIComponent(req.params.authorname);
+        const id = decodeURIComponent(req.params.id);
         console.log("amar id", id);
 
         const result = await booksCollection.find({ bookWriter: id }).toArray();
+
+        res.send(result);
+      } catch (error) {
+        console.log(error);
+      }
+    });
+    //find popular book of specific writer
+    app.get("/bookWriter/:writerName", async (req, res) => {
+      try {
+        const writerName = decodeURIComponent(req.params.writerName);
+
+        const result = await booksCollection
+          .find({ bookWriter: writerName, category_4: "জনপ্রিয়" })
+          .toArray();
+
+        res.send(result);
+      } catch (error) {
+        console.log(error);
+      }
+    });
+
+    //find simple book of specific writer
+    app.get("/simpleBookWriter/:writerName", async (req, res) => {
+      try {
+        const writerName = decodeURIComponent(req.params.writerName);
+
+        const result = await booksCollection
+          .find({ bookWriter: writerName, category_4: "সাধারন" })
+          .toArray();
+
+        res.send(result);
+      } catch (error) {
+        console.log(error);
+      }
+    });
+
+    app.get("/writers/:writer", async (req, res) => {
+      try {
+        const writer = decodeURIComponent(req.params.writer);
+
+        const result = await writerCollection.findOne({ name: writer });
 
         res.send(result);
       } catch (error) {
