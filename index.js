@@ -31,6 +31,11 @@ async function run() {
     const authorCollection = client.db("boiPoka").collection("author");
     const booksCollection = client.db("boiPoka").collection("books");
 
+
+
+
+
+
     // User releted api
     app.get("/users", async (req, res) => {
       const result = await usersCollection.find().toArray();
@@ -107,6 +112,35 @@ async function run() {
         console.log(error);
       }
     });
+
+
+
+    // -------------------------------------- Delete Reletd Api-------------
+
+    app.delete('/deleteBook/:id', async (req, res) => {
+      const id = req.params.id;
+      const query = { _id: new ObjectId(id) }
+      const result = await booksCollection.deleteOne(query)
+      res.send(result)
+    })
+    app.delete('/deleteAuthor/:id', async (req, res) => {
+      const id = req.params.id;
+      const query = { _id: new ObjectId(id) }
+      const result = await authorCollection.deleteOne(query)
+      res.send(result)
+    })
+    app.delete('/deleteWriter/:id', async (req, res) => {
+      const id = req.params.id;
+      const query = { _id: new ObjectId(id) }
+      const result = await writerCollection.deleteOne(query)
+      res.send(result)
+    })
+
+
+    // -------------------------------------- Delete Reletd Api-------------
+
+
+
 
     app.get("/search/:text", async (req, res) => {
       try {
