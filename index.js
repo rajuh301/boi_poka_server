@@ -35,6 +35,24 @@ async function run() {
 
 
 
+    // app.post('/jwt', (req, res) => {
+    //   const user = req.body;
+    //   const token = jwt.sign(user, process.env.ACCESS_TOKEN_SECRET, { expiresIn: '1h' })
+
+    //   res.send({ token })
+    // })
+
+    const verifyAdmin = async (req, res, next) => {
+      const email = req.decoded.email;
+      const query = { email: email }
+      const user = await usersCollection.findOne(query);
+      if (user?.roal !== 'admin') {
+        return res.status(403).send({ error: true, message: 'forbidden message' });
+      }
+      next();
+    }
+
+
 
     // User releted api
     app.get("/users", async (req, res) => {
@@ -56,14 +74,19 @@ async function run() {
       res.send(result);
     });
 
-    app.get("/users/admin/:email", async (req, res) => {
+    app.get('/users/admin/:email', async (req, res) => {
       const email = req.params.email;
 
-      const query = { email: email };
+      // if(req.decoded.email !==email){
+      //   res.send({admin: false })
+      // }
+
+      const query = { email: email }
       const user = await usersCollection.findOne(query);
-      const result = { admin: user?.roal === "admin" };
+      const result = { admin: user?.roal === 'admin'}
       res.send(result);
-    });
+    })
+
 
     // Writer releted api
     app.post("/writer", async (req, res) => {
