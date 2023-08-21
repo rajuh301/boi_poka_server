@@ -83,7 +83,7 @@ async function run() {
 
       const query = { email: email }
       const user = await usersCollection.findOne(query);
-      const result = { admin: user?.roal === 'admin'}
+      const result = { admin: user?.roal === 'admin' }
       res.send(result);
     })
 
@@ -136,6 +136,35 @@ async function run() {
       }
     });
 
+
+
+
+
+    // ----------------------------------------- Rating Releted Api------------
+    app.patch('/bookDetails/rating/:id', async (req, res) => {
+      const bookId = req.params.id;
+      const newRating = req.body.rating;
+    
+      try {
+        const updatedBook = await booksCollection.findOneAndUpdate(
+          { _id: new ObjectId(bookId) }, // Use new ObjectId constructor
+          { $set: { rating: newRating } },
+          { returnOriginal: false }
+        );
+    
+        if (!updatedBook) {
+          return res.status(404).json({ error: 'Book not found' });
+        }
+    
+        res.json({ modifiedCount: 1 }); // Sending a response indicating success
+      } catch (error) {
+        console.error(error);
+        res.status(500).json({ error: 'Server error' });
+      }
+    });
+    
+  
+    // ----------------------------------------- Rating Releted Api------------
 
 
     // -------------------------------------- Delete Reletd Api-------------
